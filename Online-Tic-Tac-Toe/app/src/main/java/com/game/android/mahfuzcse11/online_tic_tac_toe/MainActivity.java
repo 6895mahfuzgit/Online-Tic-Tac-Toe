@@ -27,19 +27,17 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
-
-    EditText etInviteEmal, etMyEmail;
+    EditText etInviteEMail;
+    EditText etMyEmail;
     Button buLogin;
 
-
+    //Firebase
     private FirebaseAnalytics mFirebaseAnalytics;
     private FirebaseAuth mAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
-
-
-    String myEmail;
+    String MyEmail;
     String uid;
-
+    // Write a message to the database
     FirebaseDatabase database = FirebaseDatabase.getInstance();
     DatabaseReference myRef = database.getReference();
 
@@ -47,18 +45,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        etInviteEmal = (EditText) findViewById(R.id.etInviteEmal);
+        etInviteEMail = (EditText) findViewById(R.id.etInviteEmal);
         etMyEmail = (EditText) findViewById(R.id.etMyEmail);
         buLogin = (Button) findViewById(R.id.buLogin);
-
-
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         mAuth = FirebaseAuth.getInstance();
-
-
         mAuthListener = new FirebaseAuth.AuthStateListener() {
-            public static final String TAG = "Log in";
+            public static final String TAG = "Login";
 
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
@@ -66,16 +59,13 @@ public class MainActivity extends AppCompatActivity {
                 if (user != null) {
                     // User is signed in
                     uid = user.getUid();
-                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-                    myEmail = user.getEmail();
+                    Log.d(TAG, "onAuthStateChanged:signed_in:" + uid);
+                    MyEmail = user.getEmail();
                     buLogin.setEnabled(false);
-                    etMyEmail.setText(myEmail);
+                    etMyEmail.setText(MyEmail);
 
-                    myRef.child("Users").child(beforeAt(myEmail)).child("Request").setValue(user.getUid());
-
-                    incomingRequest();
-
-
+                    myRef.child("Users").child(BeforeAt(MyEmail)).child("Request").setValue(uid);
+                    IncommingRequest();
                 } else {
                     // User is signed out
                     Log.d(TAG, "onAuthStateChanged:signed_out");
@@ -83,22 +73,14 @@ public class MainActivity extends AppCompatActivity {
                 // ...
             }
         };
-
-
     }
 
-
-    void butonColor() {
-        etInviteEmal.setBackgroundColor(Color.RED);
-    }
-
-    String beforeAt(String email) {
-
-        String[] split = email.split("@");
+    String BeforeAt(String Email) {
+        String[] split = Email.split("@");
         return split[0];
     }
 
-
+    //Login
     @Override
     public void onStart() {
         super.onStart();
@@ -113,8 +95,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void userLogin(String email, String password) {
-
+    void UserLogin(String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     public static final String TAG = "Register";
@@ -127,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                         // the auth state listener will be notified and logic to handle the
                         // signed in user can be handled in the listener.
                         if (!task.isSuccessful()) {
-                            Toast.makeText(getApplicationContext(), "Login Failed ", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getApplicationContext(), "Login fail", Toast.LENGTH_SHORT).show();
                         }
 
                         // ...
@@ -135,139 +116,127 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-
     public void BuInvite(View view) {
+        Log.d("Invate", etInviteEMail.getText().toString());
+        myRef.child("Users")
+                .child(BeforeAt(etInviteEMail.getText().toString())).child("Request").push().setValue(MyEmail);
 
-        Log.d("Invite", etInviteEmal.getText().toString());
-
-        myRef.child("Users").child(beforeAt(etInviteEmal.getText().toString())).child("Request").push().setValue(myEmail);
-        startGame(beforeAt(etInviteEmal.getText().toString()) + ":" + beforeAt(myEmail));
-
-        mySample = "X";
-    }
-
-
-    void incomingRequest() {
-
-        myRef.child("Users").child(beforeAt(myEmail)).child("Request").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                try {
-
-                    HashMap<String, Object> map = (HashMap<String, Object>) dataSnapshot.getValue();
-
-                    if (map != null) {
-
-                        String value;
-
-                        for (String k : map.keySet()) {
-
-                            value = (String) map.get(k);
-                            etInviteEmal.setText(value);
-                            butonColor();
-                            myRef.child("Users").child(beforeAt(myEmail)).child("Request").setValue(uid);
-
-                            break;
-                        }
-                    }
-
-                } catch (Exception e) {
-
-
-                }
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-
-            }
-        });
+        // Jena //Laya  ="Laya:Jena"
+        StartGame(BeforeAt(etInviteEMail.getText().toString()) + ":" + BeforeAt(MyEmail));
+        MySample = "X";
 
     }
 
+    void IncommingRequest() {
 
-    public void BuAccept(View view) {
+        // Read from the database
+        myRef.child("Users").child(BeforeAt(MyEmail)).child("Request")
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
 
-        Log.d("Accept", etInviteEmal.getText().toString());
-        myRef.child("Users").child(beforeAt(etInviteEmal.getText().toString())).child("Request").push().setValue(myEmail);
-        startGame(beforeAt(myEmail) + ":" + etInviteEmal.getText().toString());
-        mySample = "O";
-    }
+                        try {
+                            HashMap<String, Object> td = (HashMap<String, Object>) dataSnapshot.getValue();
+                            if (td != null) {
 
-
-    String playerGameId = "";
-    String mySample = "X";
-
-    void startGame(String s) {
-        playerGameId = s;
-        myRef.child("Players").child(s).removeValue();
-
-
-        myRef.child("Players").child(s).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                try {
-                    Player1.clear();
-                    Player2.clear();
-                    ActivePlayer = 2;
-
-                    String firsyPlayer = beforeAt(myEmail);
-                    HashMap<String, Object> map = (HashMap<String, Object>) dataSnapshot.getValue();
-
-                    if (map != null) {
-
-                        String value;
-
-                        for (String k : map.keySet()) {
-
-                            value = (String) map.get(k);
-                            if (!value.equals(beforeAt(myEmail))) {
-                                ActivePlayer = mySample == "X" ? 1 : 2;
-                            } else {
-
-                                ActivePlayer = mySample == "X" ? 2 : 1;
+                                String value;
+                                for (String key : td.keySet()) {
+                                    value = (String) td.get(key);
+                                    Log.d("User request", value);
+                                    etInviteEMail.setText(value);
+                                    ButtonColor();
+                                    myRef.child("Users").child(BeforeAt(MyEmail)).child("Request").setValue(uid);
+                                    break;
+                                }
                             }
 
-                            firsyPlayer = value;
-
-                            String[] split = k.split(":");
-                            AutoPlay(Integer.parseInt(split[1]));
+                        } catch (Exception ex) {
                         }
                     }
 
-                } catch (Exception e) {
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+
+                    }
+                });
+
+    }
+
+    void ButtonColor() {
+        etInviteEMail.setBackgroundColor(Color.RED);
+    }
+
+    public void BuAccept(View view) {
+        Log.d("Accept", etInviteEMail.getText().toString());
+        myRef.child("Users")
+                .child(BeforeAt(etInviteEMail.getText().toString())).child("Request").push().setValue(MyEmail);
+        //Laya// Jena  ="Laya:Jena"
+        StartGame(BeforeAt(BeforeAt(MyEmail) + ":" + etInviteEMail.getText().toString()));
+        MySample = "O";
+    }
+
+    // PlayerGameID= "Laya:Jena"
+
+    String PlayerSession = "";
+
+    String MySample = "X";
+
+    void StartGame(String PlayerGameID) {
+        PlayerSession = PlayerGameID;
+        //TODO: implement later
+        myRef.child("Playing").child(PlayerGameID).removeValue();
 
 
-                }
+        // Read from the database
+        myRef.child("Playing").child(PlayerGameID)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
 
-            }
+                        try {
+                            Player1.clear();
+                            Player2.clear();
+                            ActivePlayer = 2;
+                            HashMap<String, Object> td = (HashMap<String, Object>) dataSnapshot.getValue();
+                            if (td != null) {
 
-            @Override
-            public void onCancelled(DatabaseError error) {
+                                String value;
 
-            }
-        });
+                                for (String key : td.keySet()) {
+                                    value = (String) td.get(key);
+                                    if (!value.equals(BeforeAt(MyEmail)))
+                                        ActivePlayer = MySample == "X" ? 1 : 2;
+                                    else
+                                        ActivePlayer = MySample == "X" ? 2 : 1;
+
+                                    String[] splitID = key.split(":");
+                                    AutoPlay(Integer.parseInt(splitID[1]));
+
+                                }
+                            }
 
 
+                        } catch (Exception ex) {
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+
+                    }
+                });
     }
 
 
     public void BuLogin(View view) {
-        Log.d("Log in", etMyEmail.getText().toString());
-
-        userLogin(etMyEmail.getText().toString(), "treehouse");
-
+        // Log.d("Login",etMyEmail.getText().toString());
+        UserLogin(etMyEmail.getText().toString(), "hussein");
     }
 
-
     public void BuClick(View view) {
-
-        if (playerGameId.length() <= 0) {
+        // game not started yet
+        if (PlayerSession.length() <= 0)
             return;
-        }
 
         Button buSelected = (Button) view;
         int CellID = 0;
@@ -310,9 +279,12 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
 
-        myRef.child("Players").child(playerGameId).child("CellID" + CellID).child(beforeAt(myEmail));
+
+        myRef.child("Playing").child(PlayerSession).child("CellID:" + CellID).setValue(BeforeAt(MyEmail));
+
 
     }
+
 
     int ActivePlayer = 1; // 1- for first , 2 for second
     ArrayList<Integer> Player1 = new ArrayList<Integer>();// hold player 1 data
@@ -457,5 +429,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 }
+
 
 
